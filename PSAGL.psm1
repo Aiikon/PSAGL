@@ -29,8 +29,12 @@ Function New-MsaglGraph
 
         foreach ($node in $nodeList)
         {
-            $textblock = New-UITextBlock -Text $node.Label -Margin 4,2,4,2
-            $control = New-UIBorder -Align TopLeft -BorderBrush Black -BorderThickness 1 -CornerRadius 2 -Child $textblock -Background White
+            if ($node.Control) { $control = $node.Control }
+            else
+            {
+                $textblock = New-UITextBlock -Text $node.Label -Margin 4,2,4,2
+                $control = New-UIBorder -Align TopLeft -BorderBrush Black -BorderThickness 1 -CornerRadius 2 -Child $textblock -Background White
+            }
             $control.Measure($maxSize)
             $point = New-Object Microsoft.Glee.Splines.Point 0,0
             $box = [Microsoft.Glee.Splines.CurveFactory]::CreateBox($control.DesiredSize.Width, $control.DesiredSize.Height, $point)
@@ -48,7 +52,7 @@ Function New-MsaglGraph
 
         $graph.CalculateLayout()
 
-        $outputControl = New-UIGrid -Align TopLeft {
+        $outputControl = New-UIGrid -Margin 0,0,2,2 -Align TopLeft {
             $graph.Edges | ForEach-Object {
                 $polyLineList = $_.UnderlyingPolyline | Select-Object
                 $points = foreach ($polyLine in $polyLineList)
@@ -97,7 +101,8 @@ Function New-MsaglNode
     Param
     (
         [Parameter(Mandatory=$true, Position=0)] [string] $Label,
-        [Parameter()] [string] $Id
+        [Parameter()] [string] $Id,
+        [Parameter()] [object] $Control
     )
     End
     {
@@ -106,6 +111,7 @@ Function New-MsaglNode
         $node.Type = 'Node'
         $node.Label = $Label
         $node.Id = $Id
+        $node.Control = $Control
         [pscustomobject]$node
     }
 }
