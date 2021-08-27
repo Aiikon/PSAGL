@@ -137,12 +137,12 @@ Function New-MsaglGraph
         $nodeList = $defList | Where-Object Type -eq Node
         $edgeList = $defList | Where-Object Type -eq Edge
 
-        $graph = New-Object Microsoft.Glee.GleeGraph
+        $graph = [Microsoft.Glee.GleeGraph]::new()
         $nodeDict = @{}
         $imageMap = @{}
         $nodeToControl = @{}
 
-        $maxSize = New-Object System.Windows.Size ([double]::MaxValue), ([double]::MaxValue)
+        $maxSize = [System.Windows.Size]::new([double]::MaxValue, [double]::MaxValue)
 
         foreach ($node in $nodeList)
         {
@@ -154,9 +154,9 @@ Function New-MsaglGraph
             }
             if ($node.Href) { $imageMap[$control] = $node.Href }
             $control.Measure($maxSize)
-            $point = New-Object Microsoft.Glee.Splines.Point 0,0
+            $point = [Microsoft.Glee.Splines.Point]::new(0,0)
             $box = [Microsoft.Glee.Splines.CurveFactory]::CreateBox($control.DesiredSize.Width, $control.DesiredSize.Height, $point)
-            $msaglNode = New-Object Microsoft.Glee.Node $node.Id, $box
+            $msaglNode = [Microsoft.Glee.Node]::new($node.Id, $box)
             $graph.AddNode($msaglNode)
             $nodeDict[$node.Id] = $msaglNode
             $nodeToControl[$msaglNode] = $control
@@ -164,7 +164,7 @@ Function New-MsaglGraph
 
         foreach ($edge in $edgeList)
         {
-            $msaglEdge = New-Object Microsoft.Glee.Edge $nodeDict[$edge.ParentId], $nodeDict[$edge.ChildId]
+            $msaglEdge = [Microsoft.Glee.Edge]::new($nodeDict[$edge.ParentId], $nodeDict[$edge.ChildId])
             $graph.Edges.Add($msaglEdge)
         }
 
@@ -195,6 +195,8 @@ Function New-MsaglGraph
 
                 $arrowPoint = $pointList[-1]
 
+                # Matrix rotation example taken from Charles Petzold
+                # http://www.charlespetzold.com/blog/2007/04/191200.html
                 $matrix = [System.Windows.Media.Matrix]::Identity
                 $vector = [System.Windows.Vector]($pointList[-2] - $arrowPoint)
                 $vector.Normalize()
@@ -215,7 +217,7 @@ Function New-MsaglGraph
                 $y = $graph.Top - $_.BBox.Top
                 $x = $graph.Right - $_.BBox.Right
                 $control = $nodeToControl[$_]
-                $control.Margin = New-Object System.Windows.Thickness $x, $y, 0, 0
+                $control.Margin = [System.Windows.Thickness]::new($x, $y, 0, 0)
                 $control
             }
 
@@ -247,17 +249,17 @@ Function New-MsaglGraph
         $outputControl.Measure($maxSize)
         $outputControl.Width = $outputControl.DesiredSize.Width
         $outputControl.Height = $outputControl.DesiredSize.Height
-        $finalSize = New-Object System.Windows.Size $outputControl.Width, $outputControl.Height
-        $outputControl.Arrange((New-Object System.Windows.Rect $finalSize))
+        $finalSize = [System.Windows.Size]::new($outputControl.Width, $outputControl.Height)
+        $outputControl.Arrange([System.Windows.Rect]::new($finalSize))
         $outputControl.UpdateLayout()
 
-        $renderer = New-Object System.Windows.Media.Imaging.RenderTargetBitmap($outputControl.Width, $outputControl.Height, 96d, 96d, [System.Windows.Media.PixelFormats]::Default)
+        $renderer = [System.Windows.Media.Imaging.RenderTargetBitmap]::new($outputControl.Width, $outputControl.Height, 96d, 96d, [System.Windows.Media.PixelFormats]::Default)
         $renderer.Render($outputControl)
 
-        $pngEncoder = New-Object System.Windows.Media.Imaging.PngBitmapEncoder
+        $pngEncoder = [System.Windows.Media.Imaging.PngBitmapEncoder]::new()
         $pngEncoder.Frames.Add([System.Windows.Media.Imaging.BitmapFrame]::Create($renderer))
 
-        $memStream = New-Object System.IO.MemoryStream
+        $memStream = [System.IO.MemoryStream]::new()
         $pngEncoder.Save($memStream)
         $memStream.Close()
 
