@@ -352,3 +352,21 @@ New-MsaglGraph -As ImgTag -Definition {
     New-MsaglEdge Three Six
 } | Out-HtmlFile
 #>
+
+<# Sample 3
+New-MsaglGraph -As ImgTag -Definition {
+    New-MsaglNode One -href "/test" -Control (
+        New-UIBorder -CornerRadius 2 -Background White -BorderBrush Black -BorderThickness 1 -Align TopLeft @(
+            New-UIStackPanel -Margin 2 @(
+                New-UITextBlock -FontWeight Bold "Header"
+                New-UITextBlock "Some long sentence of text..."
+            )
+        )
+    )
+    New-MsaglNode Two
+    New-MsaglNode Three
+
+    New-MsaglEdge One Two
+    New-MsaglEdge Two Three
+} | Out-HtmlFile
+#>
