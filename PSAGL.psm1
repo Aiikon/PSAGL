@@ -307,9 +307,9 @@ Function New-MsaglEdge
 }
 
 
-<# Sample
+<# Sample 1
 Show-UIWindow {
-     New-MsaglGraph -As Control -Definition {
+    New-MsaglGraph -As Control -Definition {
         New-MsaglNode One
         New-MsaglNode Two
         New-MsaglNode Three
@@ -326,6 +326,27 @@ Show-UIWindow {
         New-MsaglEdge Two One
         New-MsaglEdge Two Four
         New-MsaglEdge Three Six
-     }
+    }
 }
+#>
+
+<# Sample 2
+New-MsaglGraph -As ImgTag -Definition {
+    New-MsaglNode One -href "https://test1"
+    New-MsaglNode Two -href "https://test2"
+    New-MsaglNode Three -href "https://test3"
+    New-MsaglNode Four
+    New-MsaglNode Five
+    New-MsaglNode Six -href "https://test6"
+
+    New-MsaglEdge One Two
+    New-MsaglEdge Two Three
+    New-MsaglEdge Three Four
+    New-MsaglEdge Four Five
+    New-MsaglEdge Five Six
+
+    New-MsaglEdge Two One
+    New-MsaglEdge Two Four
+    New-MsaglEdge Three Six
+} | Out-HtmlFile
 #>
