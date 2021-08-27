@@ -129,7 +129,8 @@ Function New-MsaglGraph
     (
         [Parameter(Mandatory=$true)] [ValidateSet('ImgTag', 'Control')] [string] $As,
         [Parameter(Mandatory=$true)] [ScriptBlock] $Definition,
-        [Parameter()] [string] $ImageMapName
+        [Parameter()] [string] $ImageMapName,
+        [Parameter()] [hashtable] $ControlHrefs
     )
     End
     {
@@ -139,7 +140,7 @@ Function New-MsaglGraph
 
         $graph = [Microsoft.Glee.GleeGraph]::new()
         $nodeDict = @{}
-        $imageMap = @{}
+        if (!$ControlHrefs) { $ControlHrefs = @{} }
         $nodeToControl = @{}
 
         $maxSize = [System.Windows.Size]::new([double]::MaxValue, [double]::MaxValue)
@@ -152,7 +153,7 @@ Function New-MsaglGraph
                 $textblock = New-UITextBlock -Text $node.Label -Margin 4,2,4,2
                 $control = New-UIBorder -Align TopLeft -BorderBrush Black -BorderThickness 1 -CornerRadius 2 -Child $textblock -Background White
             }
-            if ($node.Href) { $imageMap[$control] = $node.Href }
+            if ($node.Href) { $ControlHrefs[$control] = $node.Href }
             $control.Measure($maxSize)
             $point = [Microsoft.Glee.Splines.Point]::new(0,0)
             $box = [Microsoft.Glee.Splines.CurveFactory]::CreateBox($control.DesiredSize.Width, $control.DesiredSize.Height, $point)
@@ -225,33 +226,34 @@ Function New-MsaglGraph
 
         if ($As -eq 'Control') { return $outputControl }
 
-        $mapAttr = ''
-        $mapHtml = if ($imageMap.Keys.Count)
-        {
-            if ($ImageMapName -eq $null) { $ImageMapName = [Guid]::NewGuid().ToString('n') }
-            $mapAttr = " usemap='#$ImageMapName'"
-            "<map name='$ImageMapName'>"
-            foreach ($control in $imageMap.Keys)
-            {
-                $coords = @(
-                    $control.Margin.Left
-                    $control.Margin.Top
-                    $control.Margin.Left + $control.DesiredSize.Width
-                    $control.Margin.Top + $control.DesiredSize.Height
-                ) -join ','
-                "<area shape='rect' coords='$coords' href='$($imageMap[$control])' />"
-            }
-            "</map>"
-        }
-        
-        $mapHtml = $mapHtml -join ''
-
         $outputControl.Measure($maxSize)
         $outputControl.Width = $outputControl.DesiredSize.Width
         $outputControl.Height = $outputControl.DesiredSize.Height
         $finalSize = [System.Windows.Size]::new($outputControl.Width, $outputControl.Height)
         $outputControl.Arrange([System.Windows.Rect]::new($finalSize))
         $outputControl.UpdateLayout()
+
+        $mapAttr = ''
+        $mapHtml = if ($ControlHrefs.Keys.Count)
+        {
+            if (!$ImageMapName) { $ImageMapName = [Guid]::NewGuid().ToString('n') }
+            $mapAttr = " usemap='#$ImageMapName'"
+            "<map name='$ImageMapName'>"
+            foreach ($control in $ControlHrefs.Keys)
+            {
+                $pos = $control.TranslatePoint([System.Windows.Point]::new(0,0), $outputControl)
+                $coords = @(
+                    $pos.X
+                    $pos.Y
+                    $pos.X + $control.ActualWidth
+                    $pos.Y + $control.ActualHeight
+                ) -join ','
+                "<area shape='rect' coords='$coords' href='$($ControlHrefs[$control])' />"
+            }
+            "</map>"
+        }
+        
+        $mapHtml = $mapHtml -join ''
 
         $renderer = [System.Windows.Media.Imaging.RenderTargetBitmap]::new($outputControl.Width, $outputControl.Height, 96d, 96d, [System.Windows.Media.PixelFormats]::Default)
         $renderer.Render($outputControl)
