@@ -97,4 +97,34 @@ Import-Module ..\UI
         New-MsaglEdge Two Four
     }
 
+    h1 "Graph Within a Graph"
+
+    New-MsaglGraph -As ImgTag -Definition {
+
+        New-MsaglNode Parent
+        New-MsaglNode Child -Control (
+            New-UIBorder -CornerRadius 2 -Background White -BorderBrush Black -BorderThickness 1 -Align TopLeft @(
+                New-UIGrid @(
+                    New-MsaglGraph -As Control -Definition {
+                        New-MsaglNode Step1
+                        New-MsaglNode Step2
+                        New-MsaglNode Step3
+                        New-MsaglNode Step4
+
+                        New-MsaglEdge Step1 Step2
+                        New-MsaglEdge Step2 Step3
+                        New-MsaglEdge Step3 Step4
+                        New-MsaglEdge Step2 Step4
+                    }
+                )
+            )
+        )
+        New-MsaglNode Grandchild
+
+        New-MsaglEdge Parent Child
+        New-MsaglEdge Child Grandchild
+        New-MsaglEdge Parent Grandchild
+
+    }
+
 } | Out-HtmlFile
