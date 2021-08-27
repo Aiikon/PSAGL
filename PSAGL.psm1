@@ -128,7 +128,8 @@ Function New-MsaglGraph
     Param
     (
         [Parameter(Mandatory=$true)] [ValidateSet('ImgTag', 'Control')] [string] $As,
-        [Parameter(Mandatory=$true)] [ScriptBlock] $Definition
+        [Parameter(Mandatory=$true)] [ScriptBlock] $Definition,
+        [Parameter()] [string] $ImageMapName
     )
     End
     {
@@ -138,6 +139,7 @@ Function New-MsaglGraph
 
         $graph = New-Object Microsoft.Glee.GleeGraph
         $nodeDict = @{}
+        $imageMap = @{}
         $nodeToControl = @{}
 
         $maxSize = New-Object System.Windows.Size ([double]::MaxValue), ([double]::MaxValue)
@@ -150,6 +152,7 @@ Function New-MsaglGraph
                 $textblock = New-UITextBlock -Text $node.Label -Margin 4,2,4,2
                 $control = New-UIBorder -Align TopLeft -BorderBrush Black -BorderThickness 1 -CornerRadius 2 -Child $textblock -Background White
             }
+            if ($node.Href) { $imageMap[$control] = $node.Href }
             $control.Measure($maxSize)
             $point = New-Object Microsoft.Glee.Splines.Point 0,0
             $box = [Microsoft.Glee.Splines.CurveFactory]::CreateBox($control.DesiredSize.Width, $control.DesiredSize.Height, $point)
@@ -220,6 +223,27 @@ Function New-MsaglGraph
 
         if ($As -eq 'Control') { return $outputControl }
 
+        $mapAttr = ''
+        $mapHtml = if ($imageMap.Keys.Count)
+        {
+            if ($ImageMapName -eq $null) { $ImageMapName = [Guid]::NewGuid().ToString('n') }
+            $mapAttr = " usemap='#$ImageMapName'"
+            "<map name='$ImageMapName'>"
+            foreach ($control in $imageMap.Keys)
+            {
+                $coords = @(
+                    $control.Margin.Left
+                    $control.Margin.Top
+                    $control.Margin.Left + $control.DesiredSize.Width
+                    $control.Margin.Top + $control.DesiredSize.Height
+                ) -join ','
+                "<area shape='rect' coords='$coords' href='$($imageMap[$control])' />"
+            }
+            "</map>"
+        }
+        
+        $mapHtml = $mapHtml -join ''
+
         $outputControl.Measure($maxSize)
         $outputControl.Width = $outputControl.DesiredSize.Width
         $outputControl.Height = $outputControl.DesiredSize.Height
@@ -239,7 +263,7 @@ Function New-MsaglGraph
 
         $bytes = $memStream.ToArray()
         $base64 = [Convert]::ToBase64String($bytes)
-        "<img src='data:image/png;base64,$base64' />"
+        "<img src='data:image/png;base64,$base64'$mapAttr />$mapHtml"
     }
 }
 
@@ -249,7 +273,8 @@ Function New-MsaglNode
     (
         [Parameter(Mandatory=$true, Position=0)] [string] $Label,
         [Parameter()] [string] $Id,
-        [Parameter()] [object] $Control
+        [Parameter()] [object] $Control,
+        [Parameter()] [string] $Href
     )
     End
     {
@@ -259,6 +284,7 @@ Function New-MsaglNode
         $node.Label = $Label
         $node.Id = $Id
         $node.Control = $Control
+        $node.Href = $Href
         [pscustomobject]$node
     }
 }
