@@ -169,23 +169,45 @@ Function New-MsaglGraph
 
         $outputControl = New-UIGrid -Margin 0,0,2,2 -Align TopLeft {
             $graph.Edges | ForEach-Object {
-                $polyLineList = $_.UnderlyingPolyline | Select-Object
-                $points = foreach ($polyLine in $polyLineList)
-                {
-                    $graph.Right - $polyLine.X
-                    $graph.Top - $polyLine.Y
-                }
+                $polyLineList = $_.UnderlyingPolyline | Select-Object -SkipLast 1
+                $points = @(
+                    foreach ($polyLine in $polyLineList)
+                    {
+                        $graph.Right - $polyLine.X
+                        $graph.Top - $polyLine.Y
+                    }
+                    $graph.Right - $_.ArrowHeadAtTargetPosition.X
+                    $graph.Top - $_.ArrowHeadAtTargetPosition.Y
+                )
 
                 $pointList = for ($i = 0; $i -lt $points.Count; $i+=2)
                 {
                     [System.Windows.Point]::new($points[$i], $points[$i+1])
                 }
 
-                $path = [Rhodium.PSAGL.BezierHelper]::MakeCurve($pointList, 0.4)
+                $path = [Rhodium.PSAGL.BezierHelper]::MakeCurve($pointList, 0.2)
                 $path.StrokeThickness = 1;
                 $path.Stroke = 'Black'
                 $path
+
+                $arrowPoint = $pointList[-1]
+
+                $matrix = [System.Windows.Media.Matrix]::Identity
+                $vector = [System.Windows.Vector]($pointList[-2] - $arrowPoint)
+                $vector.Normalize()
+                $vector *= 10
+
+                $matrix.Rotate(60/2)
+                $point1 = $arrowPoint + $vector * $matrix
+
+                $matrix.Rotate(-60)
+                $point2 = $arrowPoint + $vector * $matrix
+
+                $arrowPointList = @($point1.X, $point1.Y, $arrowPoint.X, $arrowPoint.Y, $point2.X, $point2.Y)
+
+                New-UIPolygon -Points $arrowPointList -Fill Black
             }
+
             $nodeDict.Values | ForEach-Object {
                 $y = $graph.Top - $_.BBox.Top
                 $x = $graph.Right - $_.BBox.Right
@@ -193,6 +215,7 @@ Function New-MsaglGraph
                 $control.Margin = New-Object System.Windows.Thickness $x, $y, 0, 0
                 $control
             }
+
         }
 
         if ($As -eq 'Control') { return $outputControl }
