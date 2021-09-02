@@ -150,8 +150,8 @@ Function New-MsaglGraph
             if ($node.Control) { $control = $node.Control }
             else
             {
-                $textblock = New-UITextBlock -Text $node.Label -Margin 4,2,4,2
-                $control = New-UIBorder -Align TopLeft -BorderBrush Black -BorderThickness 1 -CornerRadius 2 -Child $textblock -Background White
+                $textblock = New-UITextBlock -Text $node.Label -Margin 4,2,4,2 -FontSize $node.FontSize
+                $control = New-UIBorder -Align TopLeft -BorderBrush Black -BorderThickness 1 -CornerRadius 2 -Child $textblock -Background $node.Background
             }
             if ($node.Href) { $ControlHrefs[$control] = $node.Href }
             $control.Measure($maxSize)
@@ -273,28 +273,36 @@ Function New-MsaglGraph
 
 Function New-MsaglNode
 {
+    [CmdletBinding(PositionalBinding=$false)]
     Param
     (
         [Parameter(Mandatory=$true, Position=0)] [string] $Id,
         [Parameter(Position=1)] [string] $Label,
         [Parameter()] [object] $Control,
-        [Parameter()] [string] $Href
+        [Parameter()] [string] $Href,
+        [Parameter()] [object] $Background = 'White',
+        [Parameter()] [double] $FontSize = 12
     )
     End
     {
         if (!$Label) { $Label = $Id }
+        $byte = try { [byte[]]$Background } catch { }
+        if ($byte -and $byte.Length -eq 3) { $Background = New-UISolidColorBrush -RGB $byte }
         $node = [ordered]@{}
         $node.Type = 'Node'
         $node.Id = $Id
         $node.Label = $Label
         $node.Control = $Control
         $node.Href = $Href
+        $node.Background = $Background
+        $node.FontSize = $FontSize
         [pscustomobject]$node
     }
 }
 
 Function New-MsaglEdge
 {
+    [CmdletBinding(PositionalBinding=$false)]
     Param
     (
         [Parameter(Mandatory=$true, Position=0)] [string] $ParentId,

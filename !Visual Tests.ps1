@@ -31,12 +31,12 @@ Import-Module ..\UI
     h1 "Simple Graph"
 
     New-MsaglGraph -As ImgTag -Definition {
-        New-MsaglNode One -href "https://test1"
+        New-MsaglNode One -href "https://test1" -FontSize 18 -Background 67,134,216
         New-MsaglNode Two -href "https://test2"
         New-MsaglNode Three -href "https://test3"
         New-MsaglNode Four
         New-MsaglNode Five
-        New-MsaglNode Six -href "https://test6"
+        New-MsaglNode Six -href "https://test6" -FontSize 10 -Background Red
 
         New-MsaglEdge One Two
         New-MsaglEdge Two Three
