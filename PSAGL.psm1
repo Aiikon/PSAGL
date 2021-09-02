@@ -275,18 +275,18 @@ Function New-MsaglNode
 {
     Param
     (
-        [Parameter(Mandatory=$true, Position=0)] [string] $Label,
-        [Parameter()] [string] $Id,
+        [Parameter(Mandatory=$true, Position=0)] [string] $Id,
+        [Parameter(Position=1)] [string] $Label,
         [Parameter()] [object] $Control,
         [Parameter()] [string] $Href
     )
     End
     {
-        if (!$Id) { $Id = $Label }
+        if (!$Label) { $Label = $Id }
         $node = [ordered]@{}
         $node.Type = 'Node'
-        $node.Label = $Label
         $node.Id = $Id
+        $node.Label = $Label
         $node.Control = $Control
         $node.Href = $Href
         [pscustomobject]$node
