@@ -166,6 +166,7 @@ Function New-MsaglGraph
         foreach ($edge in $edgeList)
         {
             $msaglEdge = [Microsoft.Glee.Edge]::new($nodeDict[$edge.ParentId], $nodeDict[$edge.ChildId])
+            $msaglEdge.UserData = $edge
             $graph.Edges.Add($msaglEdge)
         }
 
@@ -191,7 +192,8 @@ Function New-MsaglGraph
 
                 $path = [Rhodium.PSAGL.BezierHelper]::MakeCurve($pointList, 0.2)
                 $path.StrokeThickness = 1;
-                $path.Stroke = 'Black'
+                $path.Stroke = $_.UserData.Stroke
+                if ($_.UserData.StrokeDashArray) { $path.StrokeDashArray = $_.UserData.StrokeDashArray }
                 $path
 
                 $arrowPoint = $pointList[-1]
@@ -211,7 +213,8 @@ Function New-MsaglGraph
 
                 $arrowPointList = @($point1.X, $point1.Y, $arrowPoint.X, $arrowPoint.Y, $point2.X, $point2.Y)
 
-                New-UIPolygon -Points $arrowPointList -Fill Black
+                $line = New-UIPolygon -Points $arrowPointList -Fill Black
+                $line
             }
 
             $nodeDict.Values | ForEach-Object {
@@ -306,14 +309,20 @@ Function New-MsaglEdge
     Param
     (
         [Parameter(Mandatory=$true, Position=0)] [string] $ParentId,
-        [Parameter(Mandatory=$true, Position=1)] [string] $ChildId
+        [Parameter(Mandatory=$true, Position=1)] [string] $ChildId,
+        [Parameter()] [double[]] $StrokeDashArray,
+        [Parameter()] [object] $Stroke = 'Black'
     )
     End
     {
+        $byte = try { [byte[]]$Stroke } catch { }
+        if ($byte -and $byte.Length -eq 3) { $Stroke = New-UISolidColorBrush -RGB $byte }
         $edge = [ordered]@{}
         $edge.Type = 'Edge'
         $edge.ParentId = $ParentId
         $edge.ChildId = $ChildId
+        $edge.StrokeDashArray = $StrokeDashArray
+        $edge.Stroke = $Stroke
         [pscustomobject]$edge
     }
 }

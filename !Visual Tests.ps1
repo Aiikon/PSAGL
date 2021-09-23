@@ -1,6 +1,6 @@
-﻿Import-Module .\ -Force
-Import-Module ..\HtmlReporting
-Import-Module ..\UI
+﻿Import-Module $PSScriptRoot -Force
+Import-Module $PSScriptRoot\..\HtmlReporting
+Import-Module $PSScriptRoot\..\UI
 
 [void]{
     Show-UIWindow {
@@ -123,7 +123,7 @@ Import-Module ..\UI
 
         New-MsaglEdge Parent Child
         New-MsaglEdge Child Grandchild
-        New-MsaglEdge Parent Grandchild
+        New-MsaglEdge Parent Grandchild -StrokeDashArray 2,2 -Stroke (255,0,0)
 
     }
 
