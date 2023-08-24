@@ -167,6 +167,8 @@ Function New-MsaglGraph
         {
             $msaglEdge = [Microsoft.Glee.Edge]::new($nodeDict[$edge.ParentId], $nodeDict[$edge.ChildId])
             $msaglEdge.UserData = $edge
+            $msaglEdge.ArrowHeadAtTarget = $edge.ArrowAt -in 'Child', 'Both'
+            $msaglEdge.ArrowHeadAtSource = $edge.ArrowAt -in 'Parent', 'Both'
             $graph.Edges.Add($msaglEdge)
         }
 
@@ -174,15 +176,23 @@ Function New-MsaglGraph
 
         $outputControl = New-UIGrid -Margin 0,0,2,2 -Align TopLeft {
             $graph.Edges | ForEach-Object {
-                $polyLineList = $_.UnderlyingPolyline | Select-Object -SkipLast 1
+                $polyLineList = $_.UnderlyingPolyline | Select-Object -Skip ([int]$_.ArrowHeadAtSource) | Select-Object -SkipLast ([int]$_.ArrowHeadAtTarget)
                 $points = @(
+                    if ($_.ArrowHeadAtSource)
+                    {
+                        $graph.Right - $_.ArrowHeadAtSourcePosition.X
+                        $graph.Top - $_.ArrowHeadAtSourcePosition.Y
+                    }
                     foreach ($polyLine in $polyLineList)
                     {
                         $graph.Right - $polyLine.X
                         $graph.Top - $polyLine.Y
                     }
-                    $graph.Right - $_.ArrowHeadAtTargetPosition.X
-                    $graph.Top - $_.ArrowHeadAtTargetPosition.Y
+                    if ($_.ArrowHeadAtTarget)
+                    {
+                        $graph.Right - $_.ArrowHeadAtTargetPosition.X
+                        $graph.Top - $_.ArrowHeadAtTargetPosition.Y
+                    }
                 )
 
                 $pointList = for ($i = 0; $i -lt $points.Count; $i+=2)
@@ -196,25 +206,31 @@ Function New-MsaglGraph
                 if ($_.UserData.StrokeDashArray) { $path.StrokeDashArray = $_.UserData.StrokeDashArray }
                 $path
 
-                $arrowPoint = $pointList[-1]
+                $arrowPointList = @(
+                    if ($_.ArrowHeadAtSource) { [pscustomobject]@{From=$pointList[1]; To=$pointList[0]} }
+                    if ($_.ArrowHeadAtTarget) { [pscustomobject]@{From=$pointList[-2]; To=$pointList[-1]} }
+                )
 
-                # Matrix rotation example taken from Charles Petzold
-                # http://www.charlespetzold.com/blog/2007/04/191200.html
-                $matrix = [System.Windows.Media.Matrix]::Identity
-                $vector = [System.Windows.Vector]($pointList[-2] - $arrowPoint)
-                $vector.Normalize()
-                $vector *= 10
+                foreach ($arrowPoint in $arrowPointList)
+                {
+                    # Matrix rotation example taken from Charles Petzold
+                    # http://www.charlespetzold.com/blog/2007/04/191200.html
+                    $matrix = [System.Windows.Media.Matrix]::Identity
+                    $vector = [System.Windows.Vector]($arrowPoint.From - $arrowPoint.To)
+                    $vector.Normalize()
+                    $vector *= 10
 
-                $matrix.Rotate(60/2)
-                $point1 = $arrowPoint + $vector * $matrix
+                    $matrix.Rotate(60/2)
+                    $point1 = $arrowPoint.To + $vector * $matrix
 
-                $matrix.Rotate(-60)
-                $point2 = $arrowPoint + $vector * $matrix
+                    $matrix.Rotate(-60)
+                    $point2 = $arrowPoint.To + $vector * $matrix
 
-                $arrowPointList = @($point1.X, $point1.Y, $arrowPoint.X, $arrowPoint.Y, $point2.X, $point2.Y)
+                    $polygonPointList = @($point1.X, $point1.Y, $arrowPoint.To.X, $arrowPoint.To.Y, $point2.X, $point2.Y)
 
-                $line = New-UIPolygon -Points $arrowPointList -Fill Black
-                $line
+                    $line = New-UIPolygon -Points $polygonPointList -Fill Black
+                    $line
+                }
             }
 
             $nodeDict.Values | ForEach-Object {
@@ -311,7 +327,8 @@ Function New-MsaglEdge
         [Parameter(Mandatory=$true, Position=0)] [string] $ParentId,
         [Parameter(Mandatory=$true, Position=1)] [string] $ChildId,
         [Parameter()] [double[]] $StrokeDashArray,
-        [Parameter()] [object] $Stroke = 'Black'
+        [Parameter()] [object] $Stroke = 'Black',
+        [Parameter()] [ValidateSet('Child', 'Parent', 'Both', 'None')] [string] $ArrowAt = 'Child'
     )
     End
     {
@@ -323,6 +340,7 @@ Function New-MsaglEdge
         $edge.ChildId = $ChildId
         $edge.StrokeDashArray = $StrokeDashArray
         $edge.Stroke = $Stroke
+        $edge.ArrowAt = $ArrowAt
         [pscustomobject]$edge
     }
 }

@@ -42,11 +42,11 @@ Import-Module $PSScriptRoot\..\UI
         New-MsaglEdge Two Three
         New-MsaglEdge Three Four
         New-MsaglEdge Four Five
-        New-MsaglEdge Five Six
+        New-MsaglEdge Five Six -ArrowAt Both
 
         New-MsaglEdge Two One
         New-MsaglEdge Two Four
-        New-MsaglEdge Three Six
+        New-MsaglEdge Three Six -ArrowAt Parent
     }
 
     h1 "Custom Control Graph"
